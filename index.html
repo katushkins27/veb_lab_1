@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title> Лабораторная работа №1 </title>
+    <style>
+        body { /*селектор эл-тов + наслед */
+            background-color: #ffffff;
+            color: #3f2b14;
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        #header { /*шапка c фио */
+            background-color: #f894d7;
+            padding: 15px;
+            border-radius: 8px; /*скругл*/
+            margin: 0px 0px 20px 0px;
+        }
+        #header > p { /*+ дочерний селектор*/
+            font-family: sans-serif;
+            font-size: 16px;
+            color: #3f2b14;
+            margin: 4px 0px;
+        }
+        input[type="text"], select { /*селектор атрибута*/
+            padding: 8px; /*внутр отступ*/
+            margin-top: 5px;
+            margin-bottom: 5px;      
+            border: 1px solid #53391a;
+            border-radius: 4px;
+        }
+        input[type="radio"] { /*селектор атрибута*/
+            margin-left: 10px;
+            margin-right: 3px;
+        }
+        input[type="text"]:focus { /*псевдокласс*/
+            outline: none;
+            border-color: #f894d7;
+            box-shadow: 0 0 5px rgba(246, 56, 192, 0.5);
+        }
+        #submit_btn {
+            background-color: #f894d7;
+            color: #3f2b14;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #submit_btn:hover { /*псевдокласс*/
+            background-color: #c33c96;
+        }
+        
+        .res_table {
+            border: 2px solid #3f2b14;
+            background-color: #ffffff;
+            border-radius: 12px;
+            border-spacing: 0; /*s между границами сосед ячеек*/
+            overflow: hidden; /*хайдим для скругл*/
+            width: 100%;
+            margin-top: 15px;
+        }
+        /*каскад*/
+        .res_table th, .res_table td {
+            padding: 10px 15px;
+            vertical-align: middle;
+            border-bottom: 1px solid #3f2b14;
+            color: #333333;
+        }
+        .res_table td.hit {
+            color: #56de8f;
+            font-weight: bold;
+        }
+        .res_table td.miss {
+            color: #de5656;
+            font-weight: bold;
+        }
+
+        .layout_table {
+            border: 2px solid #3f2b14;
+            background-color: #ffffff;
+            border-radius: 12px;
+            border-spacing: 0;
+            overflow: hidden;
+            width: 100%;
+        }
+        .layout_table td {
+            padding: 20px;
+            vertical-align: top;
+        }
+        .error-message {
+            color: #de5656;
+            font-size: 13px;
+            margin-top: 4px;
+            font-family: sans-serif;
+            min-height: 18px;
+        }
+        input[type="text"].input-error {
+            border-color: #de5656;
+            box-shadow: 0 0 5px rgba(185, 58, 43, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <header id="header">
+        <p>Сергеенкова Екатерина Владимировна</p>
+        <p>Группа P3207</p>
+        <p>Вариант 12625 </p>
+    </header>
+    <table border="1" class="layout_table">
+        <tr>
+            <td>
+                <h3>Таблица расположения элементов</h3>
+                <canvas id="canvas" width="300" height="300"></canvas>
+            </td>
+
+            <td>
+                <form id="point_form">
+                    <div>
+                        <label for="x_input">Изменение X:</label>
+                        <select id="x_input" name="x">
+                            <option value="-4">-4</option>
+                            <option value="-3">-3</option>
+                            <option value="-2">-2</option>
+                            <option value="-1">-1</option>
+                            <option value="0" selected>0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+
+                    </div>
+                    <br>
+                    <div>
+                        <label for="y_input">Изменение Y: (-3 ... 5)</label>
+                        <input type="text" id="y_input">
+                        <div id="y_error" class="error-message"></div>
+                    </div>
+                    <br>
+                    <div>
+                        <label>Изменение R:</label>
+                        <label><input type="radio" name="r" value="1" checked>1</label>
+                        <label><input type="radio" name="r" value="2">2</label>
+                        <label><input type="radio" name="r" value="3">3</label>
+                        <label><input type="radio" name="r" value="4">4</label>
+                        <label><input type="radio" name="r" value="5">5</label>
+                    </div>
+                    <br>
+                    <button type="submit" id="submit_btn">Отправить</button>
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <h3>Таблица результатов</h3>
+                <table border="1" id="res_table" class="res_table">
+                    <thead>
+                        <tr>
+                            <th>X</th>
+                            <th>Y</th>
+                            <th>R</th>
+                            <th>Результат</th>
+                            <th>Время</th>  
+                        </tr>
+                    </thead>
+                    <tbody id="res_body"></tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <script>
+        function checkHit(x, y, r) {
+            if (x >= 0 && y >= 0 && x <= r / 2 && y <= r) {
+                return true;
+            }
+            if (x <= 0 && y >= 0 && y <= (x + r)) {
+                return true;
+            }
+            if (x <= 0 && y <= 0 && (x * x + y * y <= (r / 2) * (r / 2))) {
+                return true;
+            }
+            return false;
+        }
+        function formatRussianDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('ru-RU', 
+            {year: 'numeric',
+                month: '2-digit',
+                day: "2-digit",
+                hour: "2-digit",
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        function addLineToTable(data) {
+            const newLine = document.createElement('tr'); /*созд новый дом-эл, но физ-ки добавл позже*/
+            const statusText = data.hit ? "Попадание" : "Промах";
+            const statusClass = data.hit ? "hit" : "miss";
+
+            newLine.innerHTML = `
+                <td>${data.x}</td>
+                <td>${data.y}</td>
+                <td>${data.r}</td>
+                <td class="${statusClass}">${statusText}</td>
+                <td>${formatRussianDate(data.time)}</td>
+            `;
+
+            resBody.prepend(newLine);
+        }
+        function saveResultToLocalStorage(result) {
+            const history = JSON.parse(localStorage.getItem('hits_history')) || [];
+            history.push(result);
+            localStorage.setItem('hits_history', JSON.stringify(history));
+        }
+        function loadHistory(){
+            const history = JSON.parse(localStorage.getItem('hits_history')) || [];
+            history.forEach(function(item){
+                addLineToTable(item)
+            });
+        }
+
+        function validateY(valStr) {
+            if (!valStr || valStr.trim() === "") {
+                return "Поле Y не может быть пустым. Введите число в диапазоне (-3 ... 5).";
+            }
+
+            const s = valStr.trim().replace(',', '.');
+
+            const numberRegex = /^-?\d+(\.\d+)?$/;
+            if (!numberRegex.test(s)) {
+                return "Введенное значение должно быть корректным вещественным числом (без букв и спецсимволов).";
+            }
+            
+            const isNegative = s.startsWith('-');
+            const unsignedStr = isNegative ? s.slice(1) : s;
+            const parts = unsignedStr.split('.');
+            const intPart = parts[0].replace(/^0+/, '') || '0';
+            
+            if (!isNegative) {
+                if (intPart.length > 1 || parseInt(intPart, 10) >= 5) {
+                    return `Значение не подходит: Y должен быть строго меньше 5.`;
+                }
+            }
+
+            if (isNegative) {
+                if (intPart.length > 1 || parseInt(intPart, 10) > 3) {
+                    return `Значение не подходит: Y должен быть строго больше -3.`;
+                }
+
+                if (intPart === '3') {
+                    return `Значение не подходит: Y должен быть строго больше -3.`;
+                }
+            }
+            return null;
+        }
+
+        const form = document.getElementById('point_form'); /*именно в дом ищет*/
+        const yInput = document.getElementById('y_input');
+        const xSelect = document.getElementById('x_input');
+        const resBody = document.getElementById('res_body');
+
+        yInput.addEventListener('input', function() {
+            document.getElementById('y_error').textContent = "";
+            yInput.classList.remove('input-error');
+        });
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault(); /*чтобы не перегр стр, отм стандрат повед*/
+            const x = parseFloat(xSelect.value);
+            const yLine = yInput.value.trim().replace(',', '.');;
+            const errorMessage = validateY(yLine);
+            const yError = document.getElementById('y_error');
+            
+            if (errorMessage) {
+                yError.textContent = errorMessage;
+                yInput.classList.add('input-error');
+                return;
+            }
+            yError.textContent = "";
+            yInput.classList.remove('input-error');
+
+            const yNum = parseFloat(yLine);
+            const selectedRadioBtn = document.querySelector('input[name="r"]:checked'); /*именно тут, тк польз перкликивает кнопку*/
+            const r = parseFloat(selectedRadioBtn.value);
+            const isHit = checkHit(x, yNum, r);
+            const currentTime = Date.now();
+
+            const result = {x: x, y:yLine, r:r, hit:isHit, time:currentTime};
+            addLineToTable(result);
+            saveResultToLocalStorage(result);
+
+        });
+        loadHistory();
+
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width/2;
+        const centerY = height/2;
+        const scale = 100;
+
+        function drawCanvas(){
+            context.clearRect(0,0, width, height); 
+            context.fillStyle = "#f894d7";
+            context.fillRect(centerX, centerY-scale, scale/2, scale); /*прямоуг*/
+
+            context.beginPath();
+            context.moveTo(centerX, centerY);
+            context.lineTo(centerX-scale, centerY); /*линия от тп до к*/
+            context.lineTo(centerX, centerY-scale);
+            context.closePath();/*соед посл точку с нач пр линией*/
+            context.fill();
+
+            context.beginPath();
+            context.moveTo(centerX, centerY);
+            context.arc(centerX, centerY, scale/2, 0.5*Math.PI, Math.PI, false);
+            context.closePath();
+            context.fill();
+
+            context.strokeStyle ="#3f2b14";
+            context.fillStyle ="#3f2b14";
+            context.lineWidth = 1.0;
+            context.font = "12px sans-serif";
+
+            context.beginPath();
+            context.moveTo(10, centerY);
+            context.lineTo(width-10, centerY);
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(centerX, height-10);
+            context.lineTo(centerX, 10);
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(width-10, centerY);
+            context.lineTo(width-18, centerY-4);
+            context.lineTo(width-18, centerY+4);
+            context.fill();
+            context.fillText("x", width-15, centerY-8);
+
+            context.beginPath();
+            context.moveTo(centerX, 10);
+            context.lineTo(centerX-4, 18);
+            context.lineTo(centerX+4, 18);
+            context.fill();
+            context.fillText("y", centerX+8, 15);
+
+            const ticks = [
+                {x: centerX - scale, y: centerY, label: "-R"},
+                {x: centerX - scale/2, y: centerY, label: "-R/2"},
+                {x: centerX + scale/2, y: centerY, label: "R/2"},
+                {x: centerX + scale, y: centerY, label: "R"},
+                {x: centerX, y: centerY - scale, label: "R"},
+                {x: centerX, y: centerY - scale/2, label: "R/2"},
+                {x: centerX, y: centerY + scale/2, label: "-R/2"},
+                {x: centerX, y: centerY + scale, label: "-R"}
+            ];
+
+            ticks.forEach(tick =>{
+                context.beginPath();
+                if (tick.y === centerY){
+                    context.moveTo(tick.x, centerY-3);
+                    context.lineTo(tick.x, centerY+3);
+                    context.fillText(tick.label, tick.x-10, centerY+16);
+                } else {
+                    context.moveTo(centerX-3, tick.y);
+                    context.lineTo(centerX+3, tick.y);
+                    context.fillText(tick.label, centerX+8, tick.y +4);
+                }
+                context.stroke();
+            });
+        }
+
+        drawCanvas();
+        
+    </script>
+</body>
+</html>
